@@ -1,0 +1,129 @@
+package NovaAula;
+
+import java.io.IOException;
+import java.util.concurrent.Semaphore;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
+public class NovaMain {
+
+	public static void main(String[] args) throws IOException, InterruptedException {
+		Semaphore[] hashi = new Semaphore[5];
+
+		for (int i = 0; i < hashi.length; i++) {
+			hashi[i] = new Semaphore(1);
+		}
+
+		// criação dos filósofos
+		FilosofoFuncional fil0 = new FilosofoFuncional(0, hashi[0], hashi[4]);
+		FilosofoFuncional fil1 = new FilosofoFuncional(1, hashi[1], hashi[0]);
+		FilosofoFuncional fil2 = new FilosofoFuncional(2, hashi[2], hashi[1]);
+		FilosofoFuncional fil3 = new FilosofoFuncional(3, hashi[3], hashi[2]);
+		FilosofoFuncional fil4 = new FilosofoFuncional(4, hashi[4], hashi[3]);
+
+		// execução dos filósofos
+		fil0.start();
+		fil1.start();
+		fil2.start();
+		fil3.start();
+		fil4.start();
+
+		// aguardar o usuario pressionar qualquer tecla
+		System.in.read();
+
+		// desativar os filósofos
+		fil0.desativar();
+		fil1.desativar();
+		fil2.desativar();
+		fil3.desativar();
+		fil4.desativar();
+
+		// aguardar todos os filósofos finalizarem
+		fil0.join();
+		fil1.join();
+		fil2.join();
+		fil3.join();
+		fil4.join();
+
+		// imprimir quantas porções cada filósofo comeu durante o jantar
+		System.out.println("Filosofo 0. Porções comidas até agora: " + fil0.getPorcoesComidas());
+		System.out.println("Filosofo 1. Porções comidas até agora: " + fil1.getPorcoesComidas());
+		System.out.println("Filosofo 2. Porções comidas até agora: " + fil2.getPorcoesComidas());
+		System.out.println("Filosofo 3. Porções comidas até agora: " + fil3.getPorcoesComidas());
+		System.out.println("Filosofo 4. Porções comidas até agora: " + fil4.getPorcoesComidas());
+	}
+	
+}
+
+
+//Classe Filósofo que conta a quantidade de vezes que ele comeu
+
+abstract class Filosofo extends Thread {
+	protected boolean ativo = true;
+	protected int numero;
+	protected int porcoesComidas;
+
+	protected Filosofo(int numero) {
+		this.numero = numero;
+	}
+
+	public void desativar() {
+		this.ativo = false;
+	}
+
+	public int getPorcoesComidas() {
+		return porcoesComidas;
+	}
+
+	protected void pensar() {
+		System.out.println("Filosofo " + numero + " pensou.");
+	}
+
+	protected void comer() {
+		System.out.println("Filosofo " + numero + " comeu.");
+		porcoesComidas++;
+	}
+}
+
+
+//Nesta classe cada filosofo aguarda um tempo aleatório antes de fazer a próxima tentativa de obter os hashis
+class FilosofoFuncional extends Filosofo {
+	private Semaphore hashiEsquerdo;
+	private Semaphore hashiDireito;
+
+	public FilosofoFuncional(int numero, Semaphore hashiEsq, Semaphore hashiDir) {
+		super(numero);
+		this.hashiEsquerdo = hashiEsq;
+		this.hashiDireito = hashiDir;
+	}
+
+	@Override
+	public void run() {
+		Random rand = new Random();
+		try {
+			while (ativo) {
+				pensar();
+				boolean comeu = false;
+				do {
+					hashiEsquerdo.acquire();
+					boolean pegou = hashiDireito.tryAcquire(500, TimeUnit.MILLISECONDS);
+					if (pegou) {
+						comer();
+						comeu = true;
+						// libera os 2 hashis
+						hashiDireito.release();
+						hashiEsquerdo.release();
+					} else {
+						// libera o hashi que havia tomado posse e aguarda
+						hashiEsquerdo.release();
+						sleep(100 + rand.nextInt(400)); // solução funcional é aguardar tempo aleatório,
+														// diminui chance de starvation
+					}
+				} while (!comeu);
+			}
+		} catch (InterruptedException e) {
+			System.out.println("Filosofo " + numero + " interrompido. Abortando.");
+			e.printStackTrace();
+		}
+	}
+}
