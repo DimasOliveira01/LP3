@@ -56,7 +56,7 @@ public class NovaMain {
 }
 
 
-//Classe Filósofo que conta a quantidade de vezes que ele comeu
+//Classe filósofo que conta a quantidade de vezes que ele comeu
 
 abstract class Filosofo extends Thread {
 	protected boolean ativo = true;
@@ -86,7 +86,7 @@ abstract class Filosofo extends Thread {
 }
 
 
-//Nesta classe cada filosofo aguarda um tempo aleatório antes de fazer a próxima tentativa de obter os hashis
+//Nesta classe cada filósofo aguarda um tempo aleatório antes de fazer a próxima tentativa de obter os hashis
 class FilosofoFuncional extends Filosofo {
 	private Semaphore hashiEsquerdo;
 	private Semaphore hashiDireito;
@@ -117,7 +117,7 @@ class FilosofoFuncional extends Filosofo {
 						// libera o hashi que havia tomado posse e aguarda
 						hashiEsquerdo.release();
 						sleep(100 + rand.nextInt(400)); // solução funcional é aguardar tempo aleatório,
-														// diminui chance de starvation
+														// diminui chance de ficar sem comer
 					}
 				} while (!comeu);
 			}
